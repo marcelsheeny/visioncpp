@@ -115,21 +115,6 @@ struct Canny {
   }
 };
 
-template <int size>
-void genGaussianMask1D(float output[size], float sigma) {
-  float val = sigma * sigma * 2.0f;
-  float A = (1.0f / sqrt(val * M_PI));
-  float sum = 0;
-  for (int i = -(size / 2), cnt = 0; i <= (size / 2); i++, cnt++) {
-    float gaussian = A * exp(-(static_cast<float>(i * i) / val));
-    sum += gaussian;
-    output[cnt] = gaussian;
-  }
-  for (size_t i = 0; i < size; i++) {
-    output[i] = output[i] / sum;
-  }
-}
-
 // main program
 int main(int argc, char** argv) {
   // open camera using OpenCV
@@ -163,8 +148,9 @@ int main(int argc, char** argv) {
 
   // defining the mean filter size: (filter_size x filter_size)
   constexpr int filter_size = 9;
-  float gaussMask[filter_size];
-  genGaussianMask1D<filter_size>(gaussMask, 2.5);
+  float meanMask[filter_size] = {1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f,
+                                 1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f,
+                                 1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f};
 
   for (;;) {
     // Starting building the tree (use  {} during the creation of the tree)
@@ -192,31 +178,29 @@ int main(int argc, char** argv) {
       auto fgrey = visioncpp::point_operation<visioncpp::OP_RGBToGREY>(frgb);
 
       // apply mean filter to smooth the image
-      auto gauss_col =
-          visioncpp::terminal<float, filter_size, 1,
-                              visioncpp::memory_type::Buffer2D,
-                              visioncpp::scope::Constant>(gaussMask);
-      auto gauss_row =
-          visioncpp::terminal<float, 1, filter_size,
-                              visioncpp::memory_type::Buffer2D,
-                              visioncpp::scope::Constant>(gaussMask);
-      auto gauss_1 = visioncpp::neighbour_operation<visioncpp::OP_SepFilterCol>(
-          fgrey, gauss_col);
-      auto gauss = visioncpp::neighbour_operation<visioncpp::OP_SepFilterRow>(
-          gauss_1, gauss_row);
+      auto mean_col = visioncpp::terminal<float, filter_size, 1,
+                                          visioncpp::memory_type::Buffer2D,
+                                          visioncpp::scope::Constant>(meanMask);
+      auto mean_row = visioncpp::terminal<float, 1, filter_size,
+                                          visioncpp::memory_type::Buffer2D,
+                                          visioncpp::scope::Constant>(meanMask);
+      auto mean_1 = visioncpp::neighbour_operation<visioncpp::OP_SepFilterCol>(
+          fgrey, mean_col);
+      auto mean = visioncpp::neighbour_operation<visioncpp::OP_SepFilterRow>(
+          mean_1, mean_row);
 
       // applying sobel_x filter
       auto x_filter =
           visioncpp::terminal<float, 3, 3, visioncpp::memory_type::Buffer2D,
                               visioncpp::scope::Constant>(sobel_x);
       auto sobel_x = visioncpp::neighbour_operation<visioncpp::OP_Filter2D_One>(
-          gauss, x_filter);
+          mean, x_filter);
 
       auto y_filter =
           visioncpp::terminal<float, 3, 3, visioncpp::memory_type::Buffer2D,
                               visioncpp::scope::Constant>(sobel_y);
       auto sobel_y = visioncpp::neighbour_operation<visioncpp::OP_Filter2D_One>(
-          gauss, y_filter);
+          mean, y_filter);
 
       auto merge = visioncpp::point_operation<visioncpp::OP_Merge2Chns>(
           sobel_x, sobel_y);
