@@ -22,7 +22,7 @@
 ///              ---------Example---------
 ///                    Bayer Filter
 ///
-/// \brief This example implements the Bayer Filter
+/// \brief This example implements the Bayer Filter Demosaic Method
 
 // include OpenCV for camera display
 #include <opencv2/opencv.hpp>
@@ -195,11 +195,18 @@ struct BayerRGGBToBGR {
 
 // main program
 int main(int argc, char **argv) {
-  cv::Mat bayer =
-      cv::imread("../media/lena_bayer.png", CV_LOAD_IMAGE_GRAYSCALE);
+  // Load the
+  cv::Mat bayer = cv::imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
 
-  constexpr size_t COLS = 512;
-  constexpr size_t ROWS = 512;
+  if (!bayer.data) {
+    std::cout << "Image not loaded, BayerRGGB image required as input"
+              << std::endl;
+    std::cout << "example>: ./bayer_filter raw_image.png" << std::endl;
+    return -1;
+  }
+
+  constexpr size_t COLS = 1280;
+  constexpr size_t ROWS = 720;
 
   // initializing input pointer
   std::shared_ptr<uchar> input_ptr(new uchar[COLS * ROWS],
@@ -241,7 +248,7 @@ int main(int argc, char **argv) {
 
   // display results
   cv::imshow("Reference Image", bayer);
-  cv::imshow("Demoisaic", outImage);
+  cv::imshow("Demosaic", outImage);
 
   // wait for key to finalize program
   cv::waitKey(0);
