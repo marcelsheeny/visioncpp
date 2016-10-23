@@ -36,41 +36,30 @@ struct Canny {
   template <typename NeighbourT>
   float operator()(const NeighbourT p) {
     float output;
-    float a11 = p.at(p.I_c - 1, p.I_r - 1)[0];
-    float a12 = p.at(p.I_c, p.I_r - 1)[0];
-    float a13 = p.at(p.I_c + 1, p.I_r - 1)[0];
-    float a21 = p.at(p.I_c - 1, p.I_r)[0];
-    float a22 = p.at(p.I_c, p.I_r)[0];
-    float a23 = p.at(p.I_c + 1, p.I_r)[0];
-    float a31 = p.at(p.I_c - 1, p.I_r + 1)[0];
-    float a32 = p.at(p.I_c, p.I_r + 1)[0];
-    float a33 = p.at(p.I_c + 1, p.I_r + 1)[0];
 
-    float b11 = p.at(p.I_c - 1, p.I_r - 1)[1];
-    float b12 = p.at(p.I_c, p.I_r - 1)[1];
-    float b13 = p.at(p.I_c + 1, p.I_r - 1)[1];
-    float b21 = p.at(p.I_c - 1, p.I_r)[1];
-    float b22 = p.at(p.I_c, p.I_r)[1];
-    float b23 = p.at(p.I_c + 1, p.I_r)[1];
-    float b31 = p.at(p.I_c - 1, p.I_r + 1)[1];
-    float b32 = p.at(p.I_c, p.I_r + 1)[1];
-    float b33 = p.at(p.I_c + 1, p.I_r + 1)[1];
-
-    float xGrad = a22;
-    float yGrad = b22;
+    float xGrad = p.at(p.I_c, p.I_r)[0];
+    float yGrad = p.at(p.I_c, p.I_r)[1];
     float gradMag = cl::sycl::hypot(xGrad, yGrad);
 
     // perform non-maximal supression
-    float mag11 = cl::sycl::hypot(a11, b11);
-    float mag12 = cl::sycl::hypot(a12, b12);
-    float mag13 = cl::sycl::hypot(a13, b13);
+    float mag11 = cl::sycl::hypot(p.at(p.I_c - 1, p.I_r - 1)[0],
+                                  p.at(p.I_c - 1, p.I_r - 1)[1]);
+    float mag12 =
+        cl::sycl::hypot(p.at(p.I_c, p.I_r - 1)[0], p.at(p.I_c, p.I_r - 1)[1]);
+    float mag13 = cl::sycl::hypot(p.at(p.I_c + 1, p.I_r - 1)[0],
+                                  p.at(p.I_c + 1, p.I_r - 1)[1]);
 
-    float mag21 = cl::sycl::hypot(a21, b21);
-    float mag23 = cl::sycl::hypot(a23, b23);
+    float mag21 =
+        cl::sycl::hypot(p.at(p.I_c - 1, p.I_r)[0], p.at(p.I_c - 1, p.I_r)[1]);
+    float mag23 =
+        cl::sycl::hypot(p.at(p.I_c + 1, p.I_r)[0], p.at(p.I_c + 1, p.I_r)[1]);
 
-    float mag33 = cl::sycl::hypot(a33, b33);
-    float mag32 = cl::sycl::hypot(a32, b32);
-    float mag31 = cl::sycl::hypot(a31, b31);
+    float mag33 = cl::sycl::hypot(p.at(p.I_c + 1, p.I_r + 1)[0],
+                                  p.at(p.I_c + 1, p.I_r + 1)[1]);
+    float mag32 =
+        cl::sycl::hypot(p.at(p.I_c, p.I_r + 1)[0], p.at(p.I_c, p.I_r + 1)[1]);
+    float mag31 = cl::sycl::hypot(p.at(p.I_c - 1, p.I_r + 1)[0],
+                                  p.at(p.I_c - 1, p.I_r + 1)[1]);
 
     float tmp;
 
