@@ -17,7 +17,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// \file edge_detector.cc
+/// \file canny.cpp
 ///
 ///             -------Example--------
 ///              Canny Edge detector
@@ -37,9 +37,8 @@ struct Canny {
   float operator()(const NeighbourT p) {
     float output;
 
-    float xGrad = p.at(p.I_c, p.I_r)[0];
-    float yGrad = p.at(p.I_c, p.I_r)[1];
-    float gradMag = cl::sycl::hypot(xGrad, yGrad);
+    float gradMag =
+        cl::sycl::hypot(p.at(p.I_c, p.I_r)[0], p.at(p.I_c, p.I_r)[1]);
 
     // perform non-maximal supression
     float mag11 = cl::sycl::hypot(p.at(p.I_c - 1, p.I_r - 1)[0],
@@ -63,37 +62,55 @@ struct Canny {
 
     float tmp;
 
-    if (xGrad * yGrad <= 0.0f                                /*(1)*/
-            ? cl::sycl::fabs(xGrad) >= cl::sycl::fabs(yGrad) /*(2)*/
-                  ? (tmp = cl::sycl::fabs(xGrad * gradMag)) >=
-                            cl::sycl::fabs(yGrad * mag13 -
-                                           (xGrad + yGrad) * mag23)
+    if (p.at(p.I_c, p.I_r)[0] * p.at(p.I_c, p.I_r)[1] <= 0.0f /*(1)*/
+            ? cl::sycl::fabs(p.at(p.I_c, p.I_r)[0]) >=
+                      cl::sycl::fabs(p.at(p.I_c, p.I_r)[1]) /*(2)*/
+                  ? (tmp = cl::sycl::fabs(p.at(p.I_c, p.I_r)[0] * gradMag)) >=
+                            cl::sycl::fabs(p.at(p.I_c, p.I_r)[1] * mag13 -
+                                           (p.at(p.I_c, p.I_r)[0] +
+                                            p.at(p.I_c, p.I_r)[1]) *
+                                               mag23)
                         /*(3)*/
                         &&
-                        tmp > cl::sycl::fabs(yGrad * mag31 -
-                                             (xGrad + yGrad) * mag21) /*(4)*/
-                  : (tmp = cl::sycl::fabs(yGrad * gradMag)) >=
-                            cl::sycl::fabs(xGrad * mag13 -
-                                           (yGrad + xGrad) * mag12)
+                        tmp > cl::sycl::fabs(p.at(p.I_c, p.I_r)[1] * mag31 -
+                                             (p.at(p.I_c, p.I_r)[0] +
+                                              p.at(p.I_c, p.I_r)[1]) *
+                                                 mag21) /*(4)*/
+                  : (tmp = cl::sycl::fabs(p.at(p.I_c, p.I_r)[1] * gradMag)) >=
+                            cl::sycl::fabs(p.at(p.I_c, p.I_r)[0] * mag13 -
+                                           (p.at(p.I_c, p.I_r)[1] +
+                                            p.at(p.I_c, p.I_r)[0]) *
+                                               mag12)
                         /*(3)*/
                         &&
-                        tmp > cl::sycl::fabs(xGrad * mag31 -
-                                             (yGrad + xGrad) * mag32) /*(4)*/
-            : cl::sycl::fabs(xGrad) >= cl::sycl::fabs(yGrad)          /*(2)*/
-                  ? (tmp = cl::sycl::fabs(xGrad * gradMag)) >=
-                            cl::sycl::fabs(yGrad * mag33 +
-                                           (xGrad - yGrad) * mag23)
+                        tmp > cl::sycl::fabs(p.at(p.I_c, p.I_r)[0] * mag31 -
+                                             (p.at(p.I_c, p.I_r)[1] +
+                                              p.at(p.I_c, p.I_r)[0]) *
+                                                 mag32) /*(4)*/
+            : cl::sycl::fabs(p.at(p.I_c, p.I_r)[0]) >=
+                      cl::sycl::fabs(p.at(p.I_c, p.I_r)[1]) /*(2)*/
+                  ? (tmp = cl::sycl::fabs(p.at(p.I_c, p.I_r)[0] * gradMag)) >=
+                            cl::sycl::fabs(p.at(p.I_c, p.I_r)[1] * mag33 +
+                                           (p.at(p.I_c, p.I_r)[0] -
+                                            p.at(p.I_c, p.I_r)[1]) *
+                                               mag23)
                         /*(3)*/
                         &&
-                        tmp > cl::sycl::fabs(yGrad * mag11 +
-                                             (xGrad - yGrad) * mag21) /*(4)*/
-                  : (tmp = cl::sycl::fabs(yGrad * gradMag)) >=
-                            cl::sycl::fabs(xGrad * mag33 +
-                                           (yGrad - xGrad) * mag32)
+                        tmp > cl::sycl::fabs(p.at(p.I_c, p.I_r)[1] * mag11 +
+                                             (p.at(p.I_c, p.I_r)[0] -
+                                              p.at(p.I_c, p.I_r)[1]) *
+                                                 mag21) /*(4)*/
+                  : (tmp = cl::sycl::fabs(p.at(p.I_c, p.I_r)[1] * gradMag)) >=
+                            cl::sycl::fabs(p.at(p.I_c, p.I_r)[0] * mag33 +
+                                           (p.at(p.I_c, p.I_r)[1] -
+                                            p.at(p.I_c, p.I_r)[0]) *
+                                               mag32)
                         /*(3)*/
                         &&
-                        tmp > cl::sycl::fabs(xGrad * mag11 +
-                                             (yGrad - xGrad) * mag12) /*(4)*/
+                        tmp > cl::sycl::fabs(p.at(p.I_c, p.I_r)[0] * mag11 +
+                                             (p.at(p.I_c, p.I_r)[1] -
+                                              p.at(p.I_c, p.I_r)[0]) *
+                                                 mag12) /*(4)*/
         ) {
       output = gradMag;
 
