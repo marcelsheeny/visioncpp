@@ -138,6 +138,97 @@ struct RGBToGREY_U8 {
   }
 };
 
+struct Filter2D_U8_1 {
+  template <typename T1, typename T2>
+  visioncpp::pixel::U8C1 operator()(const T1 &nbr, const T2 &fltr) {
+    int hs_c = (fltr.cols / 2);
+    int hs_r = (fltr.rows / 2);
+
+    float out = 0;
+
+    for (int i2 = -hs_c, i = 0; i2 <= hs_c; i2++, i++) {
+      for (int j2 = -hs_r, j = 0; j2 <= hs_r; j2++, j++) {
+        auto x =
+            visioncpp::OP_U8C1ToFloat()(nbr.at(nbr.I_c + i2, nbr.I_r + j2));
+        out += x * fltr.at(i, j);
+      }
+    }
+    // rescale between 0 and 1
+    return visioncpp::OP_FloatToU8C1()((out + 1.0f) / 2.0f);
+  }
+};
+
+struct PowerOf2_U8 {
+  visioncpp::pixel::U8C1 operator()(const visioncpp::pixel::U8C1 &t) {
+    auto x = visioncpp::OP_U8C1ToFloat()(t);
+    x = x * x;
+    return visioncpp::OP_FloatToU8C1()(x);
+  }
+};
+
+// operator for element-wise multiplication of two images
+struct Mul_U8 {
+  visioncpp::pixel::U8C1 operator()(const visioncpp::pixel::U8C1 &t1,
+                                    const visioncpp::pixel::U8C1 &t2) {
+    auto tt1 = visioncpp::OP_U8C1ToFloat()(t1);
+    auto tt2 = visioncpp::OP_U8C1ToFloat()(t2);
+    return visioncpp::OP_FloatToU8C1()(tt1 * tt2);
+  }
+};
+
+struct Filter2D_U8_2 {
+  template <typename T1, typename T2>
+  visioncpp::pixel::U8C1 operator()(const T1 &nbr, const T2 &fltr) {
+    int hs_c = (fltr.cols / 2);
+    int hs_r = (fltr.rows / 2);
+
+    float out = 0;
+
+    for (int i2 = -hs_c, i = 0; i2 <= hs_c; i2++, i++) {
+      for (int j2 = -hs_r, j = 0; j2 <= hs_r; j2++, j++) {
+        auto x =
+            visioncpp::OP_U8C1ToFloat()(nbr.at(nbr.I_c + i2, nbr.I_r + j2));
+        out += x * fltr.at(i, j);
+      }
+    }
+    // rescale between 0 and 1
+    return visioncpp::OP_FloatToU8C1()((out) / 9.0f);
+  }
+};
+
+// operator to add two images
+struct Add_U8 {
+  visioncpp::pixel::U8C1 operator()(const visioncpp::pixel::U8C1 &t1,
+                                    const visioncpp::pixel::U8C1 &t2) {
+    auto tt1 = visioncpp::OP_U8C1ToFloat()(t1);
+    auto tt2 = visioncpp::OP_U8C1ToFloat()(t2);
+    return visioncpp::OP_FloatToU8C1()((tt1 + tt2) / 2.0f);
+  }
+};
+
+// operator to subtract two images
+struct Sub_U8 {
+  visioncpp::pixel::U8C1 operator()(const visioncpp::pixel::U8C1 &t1,
+                                    const visioncpp::pixel::U8C1 &t2) {
+    auto tt1 = visioncpp::OP_U8C1ToFloat()(t1);
+    auto tt2 = visioncpp::OP_U8C1ToFloat()(t2);
+    return visioncpp::OP_FloatToU8C1()(((tt1 - tt2) + 1.0f) / 2.0f);
+  }
+};
+
+struct Thresh_U8 {
+  /// \brief This functor implements a binary threshold
+  /// \param t1 - Image
+  /// \param thresh - float threshold value
+  /// \return U8C1 - Returns a binary image (1 if greater than threshold, 0
+  /// otherwise)
+  visioncpp::pixel::U8C1 operator()(visioncpp::pixel::U8C1 t1,
+                                    visioncpp::pixel::U8C1 thresh) {
+    return t1[0] > thresh[0] ? visioncpp::pixel::U8C1(255)
+                             : visioncpp::pixel::U8C1(0);
+  }
+};
+
 // main program
 int main(int argc, char **argv) {
   // input data
@@ -184,109 +275,112 @@ int main(int argc, char **argv) {
     // convert to grey scale
     auto fgrey = visioncpp::point_operation<RGBToGREY_U8>(in);
 
-    auto exec = visioncpp::assign(out, fgrey);
+    // applying derivative in X direction
+    auto px_filter =
+        visioncpp::terminal<float, 3, 3, visioncpp::memory_type::Buffer2D,
+                            visioncpp::scope::Constant>(sobel_x);
+    auto px = visioncpp::neighbour_operation<Filter2D_U8_1>(fgrey, px_filter);
 
-    // visioncpp::execute<visioncpp::policy::Fuse, SM, SM, SM, SM>(exec, dev);
+    auto py_filter =
+        visioncpp::terminal<float, 3, 3, visioncpp::memory_type::Buffer2D,
+                            visioncpp::scope::Constant>(sobel_y);
+    auto py = visioncpp::neighbour_operation<Filter2D_U8_1>(fgrey, py_filter);
 
+    auto px2 = visioncpp::point_operation<PowerOf2_U8>(px);
+    auto py2 = visioncpp::point_operation<PowerOf2_U8>(py);
+    auto pxy = visioncpp::point_operation<Mul_U8>(px, py);
+
+    auto kpx2 =
+        visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(px2);
+    auto kpy2 =
+        visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(py2);
+    auto kpxy =
+        visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(pxy);
+
+    // Summing neighbours
+    auto sum_mask_node =
+        visioncpp::terminal<float, 3, 3, visioncpp::memory_type::Buffer2D,
+                            visioncpp::scope::Constant>(sum_mask);
+
+    auto sumpx2 =
+        visioncpp::neighbour_operation<Filter2D_U8_2>(kpx2, sum_mask_node);
+    auto sumpy2 =
+        visioncpp::neighbour_operation<Filter2D_U8_2>(kpy2, sum_mask_node);
+    auto sumpxy =
+        visioncpp::neighbour_operation<Filter2D_U8_2>(kpxy, sum_mask_node);
+
+    // breaking the tree after convolution
+    auto ksumpx2 =
+        visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(sumpx2);
+    auto ksumpy2 =
+        visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(sumpy2);
+    auto ksumpxy =
+        visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(sumpxy);
+
+    // applying the formula det(M)-k*(trace(M)^2)
+    // det(M) = (ksumpx2*ksumpy2 - ksumpxy*ksumpxy)
+    auto mul1 = visioncpp::point_operation<Mul_U8>(ksumpx2, ksumpy2);
+    auto mul2 = visioncpp::point_operation<PowerOf2_U8>(ksumpxy);
+    auto det = visioncpp::point_operation<Sub_U8>(mul1, mul2);
+
+    // trace(M) = ksumpx2 + ksumpy2
+    auto trace = visioncpp::point_operation<Add_U8>(ksumpx2, ksumpy2);
+
+    // trace(M)^2
+    auto trace2 = visioncpp::point_operation<PowerOf2_U8>(trace);
+
+    // k*(trace(M)^2)
+    // auto k_node =
+    //    visioncpp::terminal<float, visioncpp::memory_type::Const>(1.0f);
+    // auto ktrace2 = visioncpp::point_operation<Mul_U8>(trace2, k_node);
+
+    // harris = det(M)-k*(trace(M)^2)
+    auto harris = visioncpp::point_operation<Sub_U8>(det, trace2);
+
+    auto thresh_node = visioncpp::terminal<visioncpp::pixel::U8C1,
+                                           visioncpp::memory_type::Const>(188);
+    auto harrisTresh =
+        visioncpp::point_operation<Thresh_U8>(harris, thresh_node);
+
+    auto exec = visioncpp::assign(out, harrisTresh);
     /*
-      // applying derivative in X direction
-      auto px_filter =
-          visioncpp::terminal<float, 3, 3, visioncpp::memory_type::Buffer2D,
-                              visioncpp::scope::Constant>(sobel_x);
-      auto px = visioncpp::neighbour_operation<Filter2D>(fgrey, px_filter);
+    // applying derivative in Y direction
 
-      // applying derivative in Y direction
-      auto py_filter =
-          visioncpp::terminal<float, 3, 3, visioncpp::memory_type::Buffer2D,
-                              visioncpp::scope::Constant>(sobel_y);
-      auto py = visioncpp::neighbour_operation<Filter2D>(fgrey, py_filter);
 
-      // starting building the M matrix
-      auto px2 = visioncpp::point_operation<PowerOf2>(px);
-      auto py2 = visioncpp::point_operation<PowerOf2>(py);
-      auto pxy = visioncpp::point_operation<Mul>(px, py);
 
-      // breaking the tree before convolution for a better use of shared memory
-      auto kpx2 = visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM,
-      SM>(px2);
-      auto kpy2 = visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM,
-      SM>(py2);
-      auto kpxy = visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM,
-      SM>(pxy);
 
-      // Summing neighbours
-      auto sum_mask_node =
-          visioncpp::terminal<float, 3, 3, visioncpp::memory_type::Buffer2D,
-                              visioncpp::scope::Constant>(sum_mask);
+    // break tree before neighbour_operation
+    // auto kharris =
+    //    visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM,
+    SM > (harris);
 
-      auto sumpx2 = visioncpp::neighbour_operation<Filter2D>(kpx2,
-      sum_mask_node);
-      auto sumpy2 = visioncpp::neighbour_operation<Filter2D>(kpy2,
-      sum_mask_node);
-      auto sumpxy = visioncpp::neighbour_operation<Filter2D>(kpxy,
-      sum_mask_node);
+    // auto harris_non_maximum =
+    //    visioncpp::neighbour_operation<NonMaximalSuppresion, halfWindowSize,
+    //                                   halfWindowSize, halfWindowSize,
+    //                                   halfWindowSize>(kharris);
 
-      // breaking the tree after convolution
-      auto ksumpx2 =
-          visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(sumpx2);
-      auto ksumpy2 =
-          visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(sumpy2);
-      auto ksumpxy =
-          visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(sumpxy);
+    // break tree after neighbour_operation
+    // auto kharris_non_maximum =
+    //    visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(
+    //        harris_non_maximum);
 
-      // applying the formula det(M)-k*(trace(M)^2)
-      // det(M) = (ksumpx2*ksumpy2 - ksumpxy*ksumpxy)
-      auto mul1 = visioncpp::point_operation<Mul>(ksumpx2, ksumpy2);
-      auto mul2 = visioncpp::point_operation<PowerOf2>(ksumpxy);
-      auto det = visioncpp::point_operation<Sub>(mul1, mul2);
+    // apply a threshold
+    // auto thresh_node = visioncpp::terminal<float,
+    // visioncpp::memory_type::Const>(
+    //    static_cast<float>(threshold));
+    // auto harrisTresh = visioncpp::point_operation<Thresh>(harris,
+    // thresh_node);
 
-      // trace(M) = ksumpx2 + ksumpy2
-      auto trace = visioncpp::point_operation<Add>(ksumpx2, ksumpy2);
+    // convert to unsigned char for displaying purposes
+    // scale threhold to display
+    auto scale_node = visioncpp::terminal<float, visioncpp::memory_type::Const>(
+        static_cast<float>(255.0f));
+    auto display =
+        visioncpp::point_operation<visioncpp::OP_Scale>(harris, scale_node);
 
-      // trace(M)^2
-      auto trace2 = visioncpp::point_operation<PowerOf2>(trace);
-
-      // k*(trace(M)^2)
-      auto k_node =
-          visioncpp::terminal<float, visioncpp::memory_type::Const>(k_param);
-      auto ktrace2 = visioncpp::point_operation<Mul>(trace2, k_node);
-
-      // harris = det(M)-k*(trace(M)^2)
-      auto harris = visioncpp::point_operation<Sub>(det, ktrace2);
-
-      // break tree before neighbour_operation
-      // auto kharris =
-      //    visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM,
-      SM>(harris);
-
-      // auto harris_non_maximum =
-      //    visioncpp::neighbour_operation<NonMaximalSuppresion, halfWindowSize,
-      //                                   halfWindowSize, halfWindowSize,
-      //                                   halfWindowSize>(kharris);
-
-      // break tree after neighbour_operation
-      // auto kharris_non_maximum =
-      //    visioncpp::schedule<visioncpp::policy::Fuse, SM, SM, SM, SM>(
-      //        harris_non_maximum);
-
-      // apply a threshold
-      // auto thresh_node = visioncpp::terminal<float,
-      // visioncpp::memory_type::Const>(
-      //    static_cast<float>(threshold));
-      // auto harrisTresh = visioncpp::point_operation<Thresh>(harris,
-      // thresh_node);
-
-      // convert to unsigned char for displaying purposes
-      // scale threhold to display
-      auto scale_node = visioncpp::terminal<float,
-      visioncpp::memory_type::Const>(
-          static_cast<float>(255.0f));
-      auto display =
-          visioncpp::point_operation<visioncpp::OP_Scale>(harris, scale_node);
-
-      // assign to the output
-      auto exec = visioncpp::assign(out, display);
-      */
+    // assign to the output
+    auto exec = visioncpp::assign(out, display);
+    */
 
     for (size_t i = 0; i < cnt; i++) {
       auto begin = visioncpp::internal::tools::get_current_time();
