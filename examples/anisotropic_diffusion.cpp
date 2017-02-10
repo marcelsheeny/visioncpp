@@ -45,12 +45,17 @@ struct AniDiff {
   template <typename T>
   visioncpp::pixel::F32C3 operator()(T nbr) {
     // init output pixel
+    // visioncpp::pixel::F32C3 out(0.0f, 0.0f, 0.0f);
     cl::sycl::float4 out(0, 0, 0, 0);
 
     // init sum variable, which is used to normalize
+    // visioncpp::pixel::F32C3 sum_w(0.0f, 0.0f, 0.0f);
     cl::sycl::float4 sum_w(0, 0, 0, 0);
 
     // get center pixel
+    // visioncpp::pixel::F32C3 p1(nbr.at(nbr.I_c, nbr.I_r)[0],
+    //                           nbr.at(nbr.I_c, nbr.I_r)[1],
+    //                           nbr.at(nbr.I_c, nbr.I_r)[2]);
     cl::sycl::float4 p1(nbr.at(nbr.I_c, nbr.I_r)[0],
                         nbr.at(nbr.I_c, nbr.I_r)[1],
                         nbr.at(nbr.I_c, nbr.I_r)[2], 0);
@@ -59,11 +64,20 @@ struct AniDiff {
     for (int i = -1; i <= 1; i++) {
       for (int j = -1; j <= 1; j++) {
         // get neighbour pixel
+        // visioncpp::pixel::F32C3 p2(nbr.at(nbr.I_c + i, nbr.I_r + j)[0],
+        //                           nbr.at(nbr.I_c + i, nbr.I_r + j)[1],
+        //                           nbr.at(nbr.I_c + i, nbr.I_r + j)[2]);
         cl::sycl::float4 p2(nbr.at(nbr.I_c + i, nbr.I_r + j)[0],
                             nbr.at(nbr.I_c + i, nbr.I_r + j)[1],
                             nbr.at(nbr.I_c + i, nbr.I_r + j)[2], 0);
 
         // computes the weight which basically is the difference between pixels
+        // visioncpp::pixel::F32C3 absp(cl::sycl::fabs(p1[0] - p2[0]),
+        //                             cl::sycl::fabs(p1[1] - p2[1]),
+        //                             cl::sycl::fabs(p1[2] - p2[2]));
+        // visioncpp::pixel::F32C3 w(cl::sycl::exp((-k) * absp[0]),
+        //                          cl::sycl::exp((-k) * absp[1]),
+        //                          cl::sycl::exp((-k) * absp[2]));
         cl::sycl::float4 w = cl::sycl::exp((-k) * cl::sycl::fabs(p1 - p2));
 
         // sum the weights for normalization
@@ -76,6 +90,7 @@ struct AniDiff {
     // normalize output and return
     out = out / sum_w;
     return visioncpp::pixel::F32C3(out.x(), out.y(), out.z());
+    // return out / sum_w;
   }
 };
 
