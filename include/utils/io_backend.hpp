@@ -9,25 +9,27 @@ class AbstractInterface {
 };
 
 /* Interface for internal implementation that Bridge uses. */
-class ImplementationInterface {
+class IOHandler {
  public:
-  virtual void anotherFunctionality() = 0;
+  virtual void InitMemory() = 0;
+  virtual void save() = 0;
+  virtual void display() = 0;
 };
 
 /* The Bridge */
 class Bridge : public AbstractInterface {
  protected:
-  ImplementationInterface* implementation;
+  IOHandler* implementation;
 
  public:
-  Bridge(ImplementationInterface* backend) { implementation = backend; }
+  Bridge(IOHandler* backend) { implementation = backend; }
 };
 
 /* Different special cases of the interface. */
 
 class UseCase1 : public Bridge {
  public:
-  UseCase1(ImplementationInterface* backend) : Bridge(backend) {}
+  UseCase1(IOHandler* backend) : Bridge(backend) {}
 
   void someFunctionality() {
     std::cout << "UseCase1 on ";
@@ -35,45 +37,29 @@ class UseCase1 : public Bridge {
   }
 };
 
-class UseCase2 : public Bridge {
- public:
-  UseCase2(ImplementationInterface* backend) : Bridge(backend) {}
-
-  void someFunctionality() {
-    std::cout << "UseCase2 on ";
-    implementation->anotherFunctionality();
-  }
-};
-
 /* Different background implementations. */
 
-class opencv_backend : public ImplementationInterface {
+class opencv_backend : public IOHandler {
  public:
-  void anotherFunctionality() { std::cout << "Windows :-!" << std::endl; }
+  void anotherFunctionality() { std::cout << "opencv :-!" << std::endl; }
 };
 
-class cimg_backend : public ImplementationInterface {
+class cimg_backend : public IOHandler {
  public:
-  void anotherFunctionality() { std::cout << "Linux! :-)" << std::endl; }
+  void anotherFunctionality() { std::cout << "cimg! :-)" << std::endl; }
 };
 
 int main() {
   AbstractInterface* useCase = 0;
-  ImplementationInterface* osWindows = new opencv_backend;
-  ImplementationInterface* osLinux = new cimg_backend;
+#ifdef USE_CIMG
+  ImplementationInterface* backend = new opencv_backend;
+#elif USE_OPENCV
+  ImplementationInterface* backend = new cimg_backend;
+#else
+  ImplementationInterface* backend = new opencv_backend;
 
   /* First case */
-  useCase = new UseCase1(osWindows);
-  useCase->someFunctionality();
-
-  useCase = new UseCase1(osLinux);
-  useCase->someFunctionality();
-
-  /* Second case */
-  useCase = new UseCase2(osWindows);
-  useCase->someFunctionality();
-
-  useCase = new UseCase2(osLinux);
+  useCase = new UseCase1(backend);
   useCase->someFunctionality();
 
   return 0;
