@@ -29,12 +29,18 @@ using namespace visioncpp::utils::opencv;
 namespace visioncpp {
 namespace utils {
 
+/**
+ * IOHandler class handles the input output in a agnostic way.
+ * Currently using OpenCV and CImg to load/display images
+ */
 template <int COLS, int ROWS, int CHANNELS, typename T>
 class IOHandler {
  public:
-  IOHandler(char *filename) {
+  /* Constructor receives the filename path, which initialize input and output
+   * memories */
+  IOHandler(const char *filename) {
     initMemory<COLS, ROWS, CHANNELS, T>(filename, output_ptr, outputImage,
-                                        input_ptr);
+                                        input_ptr, inputImage);
   }
 
   void saveOutput(char *output_file) {
@@ -315,9 +321,11 @@ class IOHandler {
   std::shared_ptr<T> output_ptr;
   std::shared_ptr<T> input_ptr;
 #ifdef USE_CIMG
-  CImg<unsigned char> outputImage;
+  CImg<T> inputImage;
+  CImg<T> outputImage;
 #else
   cv::Mat outputImage;
+  cv::Mat inputImage;
 #endif
 };
 }  // namespace utils

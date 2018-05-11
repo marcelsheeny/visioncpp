@@ -45,18 +45,18 @@ struct OP_Magnitude {
 
 void help() {
   std::cout << "Usage:" << std::endl;
-  std::cout
-      << "./bin/examples/edge_detector path/to/input.png path/to/output.png"
-      << std::endl;
+  std::cout << "./bin/examples/edge_detector_flexible_backend "
+               "path/to/input.png path/to/output.png"
+            << std::endl;
 }
 
 // main program
 int main(int argc, char** argv) {
   // check number of arguments
-//  if (argc != 3) {
-//    help();
-//    return -1;
-//  }
+  if (argc != 3) {
+    help();
+    return -1;
+  }
   // // selecting device
   auto dev = visioncpp::make_device<visioncpp::backend::sycl,
                                     visioncpp::device::cpu>();
@@ -65,10 +65,8 @@ int main(int argc, char** argv) {
   constexpr size_t ROWS = 640;
   constexpr size_t CHANNELS = 1;
 
-
   visioncpp::utils::IOHandler<COLS, ROWS, CHANNELS, unsigned char> ioHandler(
       argv[1]);
-  ioHandler.displayInput("Input");
 
   // initializing the mask memories
   float sobel_x[9] = {-1.0f, 0.0f, 1.0f, -2.0f, 0.0f, 2.0f, -1.0f, 0.0f, 1.0f};
@@ -128,10 +126,11 @@ int main(int argc, char** argv) {
 
     visioncpp::execute<visioncpp::policy::Fuse, 8, 8, 8, 8>(pipe, dev);
   }
-
-  ioHandler.saveOutput(argv[2]);
-  ioHandler.displayOutput(argv[2]);
-  //ioHandler.displayGreyscaleImageOnFrameBuffer(0,0);
+  // display results
+  ioHandler.displayInput("Input");
+  ioHandler.displayOutput("Output");
+  // ioHandler.saveOutput(argv[2]);
+  // ioHandler.displayGreyscaleImageOnFrameBuffer(0,0);
 
   return 0;
 }

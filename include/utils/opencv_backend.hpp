@@ -11,23 +11,15 @@ namespace opencv {
 
 template <int COLS, int ROWS, int CHANNELS, typename T>
 void initMemory(const char *filename, std::shared_ptr<T> &output_ptr,
-                cv::Mat &outputImage, std::shared_ptr<T> &input_ptr) {
-  // creating a pointer to store the results
-  //  output_ptr =
-  //      std::shared_ptr<T>(new unsigned char[COLS * ROWS * CHANNELS],
-  //                         [](unsigned char *dataMem) { delete[] dataMem; });
-  output_ptr =
-      std::shared_ptr<T>(new unsigned char[COLS * ROWS * CHANNELS],
-                         [](unsigned char *dataMem) { delete[] dataMem; });
-
+                cv::Mat &outputImage, std::shared_ptr<T> &input_ptr,
+                cv::Mat &inputImage) {
   printf("Using OpenCV\n");
 
-  cv::Mat input = cv::imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
-  cv::resize(input, input, cv::Size(COLS, ROWS));
-  // input_ptr.reset();
-  input_ptr = std::shared_ptr<T>(input.data);
-  // input_ptr = input.data;
+  output_ptr = std::shared_ptr<T>(new unsigned char[COLS * ROWS * CHANNELS]);
+  inputImage = cv::imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
+  cv::resize(inputImage, inputImage, cv::Size(COLS, ROWS));
   outputImage = cv::Mat(ROWS, COLS, CV_8UC(CHANNELS), output_ptr.get());
+  input_ptr = std::shared_ptr<T>(inputImage.data);
 }
 
 void save_image_output(char *output_file, cv::Mat outputImage) {

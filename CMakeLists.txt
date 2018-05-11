@@ -56,7 +56,15 @@ if (USE_CIMG)
 
   include_directories(${CIMG_ROOT_DIR})
 
-else ()
+elseif (USE_OPENCV)
+  add_definitions(-DUSE_OPENCV)
+  remove_definitions(-DUSE_CIMG)
+  find_package(OpenCV REQUIRED)
+  include_directories(${OpenCV_INCLUDE_DIRS})
+  link_libraries(${OpenCV_LIBS})
+
+else()
+  # use opencv as default
   add_definitions(-DUSE_OPENCV)
   remove_definitions(-DUSE_CIMG)
   find_package(OpenCV REQUIRED)
