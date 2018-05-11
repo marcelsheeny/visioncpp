@@ -46,23 +46,23 @@ struct OP_Magnitude {
 void help() {
   std::cout << "Usage:" << std::endl;
   std::cout << "./bin/examples/edge_detector_flexible_backend "
-               "path/to/input.png path/to/output.png"
+               "path/to/input.png [path/to/output.png]"
             << std::endl;
 }
 
 // main program
 int main(int argc, char** argv) {
   // check number of arguments
-  if (argc != 3) {
+  if (argc < 2) {
     help();
     return -1;
   }
-  // // selecting device
+  // selecting device
   auto dev = visioncpp::make_device<visioncpp::backend::sycl,
                                     visioncpp::device::cpu>();
   // defining the image size constants
-  constexpr size_t COLS = 640;
-  constexpr size_t ROWS = 640;
+  constexpr size_t COLS = 512;
+  constexpr size_t ROWS = 512;
   constexpr size_t CHANNELS = 1;
 
   visioncpp::utils::IOHandler<COLS, ROWS, CHANNELS, unsigned char> ioHandler(
@@ -127,10 +127,10 @@ int main(int argc, char** argv) {
     visioncpp::execute<visioncpp::policy::Fuse, 8, 8, 8, 8>(pipe, dev);
   }
   // display results
-  ioHandler.displayInput("Input");
-  ioHandler.displayOutput("Output");
+  // ioHandler.displayInput("Input");
+  // ioHandler.displayOutput("Output");
   // ioHandler.saveOutput(argv[2]);
-  // ioHandler.displayGreyscaleImageOnFrameBuffer(0,0);
+  ioHandler.displayGreyscaleImageOnFrameBuffer(0, 0);
 
   return 0;
 }
