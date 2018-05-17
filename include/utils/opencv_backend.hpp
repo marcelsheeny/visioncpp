@@ -49,7 +49,7 @@
 // }  // namespace opencv
 // }  // namespace utils
 // }  // namespace visioncpp
-
+#pragma once
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -58,15 +58,14 @@
 
 namespace visioncpp {
 namespace utils {
-template <int COLS, int ROWS, int CHANNELS, class T>
-class opencv {
- private:
+template <int COLS, int ROWS, int CHANNELS, class T> class opencv {
+
+public:
   std::shared_ptr<T> output_ptr;
   std::shared_ptr<T> input_ptr;
   cv::Mat outputImage;
   cv::Mat inputImage;
 
- public:
   opencv() {}
   opencv(const char *filename) {
     printf("Using OpenCV\n");
@@ -95,6 +94,6 @@ class opencv {
     cv::imshow(str, inputImage);
     cv::waitKey(0);
   }
-};  // namespace utils
-}  // namespace utils
-}  // namespace visioncpp
+}; // namespace utils
+} // namespace utils
+} // namespace visioncpp

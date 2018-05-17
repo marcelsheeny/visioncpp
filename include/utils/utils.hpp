@@ -388,7 +388,9 @@
 #include <python2.7/Python.h>
 #include <thread>
 
+#include <ctime>
 #include <fcntl.h>
+#include <iostream>
 #include <linux/fb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -396,20 +398,14 @@
 #include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
-#include <ctime>
-#include <iostream>
 
 #ifdef USE_CIMG
 #include "cimg_backend.hpp"
-// using namespace visioncpp::utils::cimg;
-template <int COLS, int ROWS, int CHANNELS, typename T>
-using visioncpp::utils::cimg<COLS, ROWS, CHANNELS, T> = IOBackend;
 #else
 #include "opencv_backend.hpp"
-// using namespace visioncpp::utils::opencv;
-template <int COLS, int ROWS, int CHANNELS, typename T>
-using visioncpp::utils::opencv<COLS, ROWS, CHANNELS, T> = IOBackend;
 #endif
+
+using namespace visioncpp::utils;
 
 namespace visioncpp {
 namespace utils {
@@ -418,44 +414,33 @@ namespace utils {
  * IOHandler class handles the input output in a agnostic way.
  * Currently using OpenCV and CImg to load/display images
  */
-template <int COLS, int ROWS, int CHANNELS, typename T>
-class IOHandler {
- public:
-  IOHandler() : backend<COLS, ROWS, CHANNELS, T>() {}
+template <int COLS, int ROWS, int CHANNELS, typename T> class IOHandler {
+public:
+  IOHandler() : backend() {}
 
   /* Constructor receives the filename path, which initialize input and output
    * memories */
-  IOHandler(const char *filename)
-      : backend<COLS, ROWS, CHANNELS, T>(filename) {}
+  IOHandler(const char *filename) : backend(filename) {}
 
-  void imread(const char *filename) {
-    initMemory<COLS, ROWS, CHANNELS, T>(filename, output_ptr, outputImage,
-                                        input_ptr, inputImage);
-  }
+  void imread(const char *filename) { backend = IOBackend(filename); }
 
-  void saveOutput(char *output_file) {
-    save_image_output(output_file, outputImage);
-  }
+  void saveOutput(char *output_file) { backend.save_image_output(output_file); }
 
-  void displayOutput(char *str) { display_image_output(str, outputImage); }
+  void displayOutput(char *str) { backend.display_image_output(str); }
 
-  void saveInput(char *output_file) {
-    save_image_input(output_file, input_ptr, COLS, ROWS, CHANNELS);
-  }
+  void saveInput(char *output_file) { backend.save_image_input(output_file); }
 
-  void displayInput(char *str) {
-    display_image_input(str, input_ptr, COLS, ROWS, CHANNELS);
-  }
+  void displayInput(char *str) { backend.display_image_input(str); }
 
-  T *getInputPointer() { return input_ptr.get(); }
+  T *getInputPointer() { return backend.input_ptr.get(); }
 
-  T *getOutputPointer() { return output_ptr.get(); }
+  T *getOutputPointer() { return backend.output_ptr.get(); }
 
   void displayGreyscaleImageOnFrameBuffer(int pos_x, int pos_y) {
     int width = COLS;
     int height = ROWS;
-    int image[width * height];  // first number here is pixels in my image, 3 is
-                                // for RGB values
+    int image[width * height]; // first number here is pixels in my image, 3 is
+                               // for RGB values
 
     // printf("width %d, height %d \n", width, height);
     //      cout << width << "x" << height << endl;
@@ -467,7 +452,7 @@ class IOHandler {
         // printf("R:%u G:%u B:%u, r:%d,
         // c:%d\n",inputimage(c,r,0,2),inputimage(c,r,0,1),inputimage(c,r,0,0),r,c);
         // image[i] = inputimage(c,r,0,0);  // R
-        image[i] = input_ptr[r * COLS + c];
+        image[i] = backend.input_ptr.get()[r * COLS + c];
         i++;
       }
     }
@@ -522,11 +507,11 @@ class IOHandler {
         location = (x + vinfo.xoffset) * (vinfo.bits_per_pixel / 8) +
                    (y + vinfo.yoffset) * finfo.line_length;
         *(fbp + location) =
-            image[countpixel];  //*(fbp + location) = image[countpixel][2];
+            image[countpixel]; //*(fbp + location) = image[countpixel][2];
         *(fbp + location + 1) =
-            image[countpixel];  //*(fbp + location + 1) = image[countpixel][1];
+            image[countpixel]; //*(fbp + location + 1) = image[countpixel][1];
         *(fbp + location + 2) =
-            image[countpixel];  //*(fbp + location + 2) = image[countpixel][0];
+            image[countpixel]; //*(fbp + location + 2) = image[countpixel][0];
         //*(fbp + location + 3) = 0;
         countpixel++;
       }
@@ -537,8 +522,8 @@ class IOHandler {
   void displayImageOnFrameBuffer(int pos_x, int pos_y) {
     int width = COLS;
     int height = ROWS;
-    int image[width * height][3];  // first number here is pixels in my image, 3
-                                   // is for RGB values
+    int image[width * height][3]; // first number here is pixels in my image, 3
+                                  // is for RGB values
 
     //	printf("width %d, height %d \n", width, height);
     //      cout << width << "x" << height << endl;
@@ -553,9 +538,9 @@ class IOHandler {
         //        image[i][1] = inputimage(c,r,0,1);  // G
         //        image[i][0] = inputimage(c,r,0,0);  // R
 
-        image[i][2] = input_ptr[r * COLS + c + 2];
-        image[i][2] = input_ptr[r * COLS + c + 1];
-        image[i][2] = input_ptr[r * COLS + c + 0];
+        image[i][2] = backend.input_ptr.get()[r * COLS + c + 2];
+        image[i][2] = backend.input_ptr.get()[r * COLS + c + 1];
+        image[i][2] = backend.input_ptr.get()[r * COLS + c + 0];
         i++;
       }
     }
@@ -610,13 +595,13 @@ class IOHandler {
         location = (x + vinfo.xoffset) * (vinfo.bits_per_pixel / 8) +
                    (y + vinfo.yoffset) * finfo.line_length;
         *(fbp + location) =
-            image[countpixel][0];  //*(fbp + location) = image[countpixel][2];
+            image[countpixel][0]; //*(fbp + location) = image[countpixel][2];
         *(fbp + location + 1) =
             image[countpixel]
-                 [1];  //*(fbp + location + 1) = image[countpixel][1];
+                 [1]; //*(fbp + location + 1) = image[countpixel][1];
         *(fbp + location + 2) =
             image[countpixel]
-                 [2];  //*(fbp + location + 2) = image[countpixel][0];
+                 [2]; //*(fbp + location + 2) = image[countpixel][0];
         *(fbp + location + 3) = 0;
         countpixel++;
       }
@@ -625,8 +610,8 @@ class IOHandler {
   }
 
   void showImageOnFrameBuffer(char *filepath, int pos_x, int pos_y) {
-    int image[230400][3];  // first number here is 236160 pixels in my image, 3
-                           // is for RGB values
+    int image[230400][3]; // first number here is 236160 pixels in my image, 3
+                          // is for RGB values
     FILE *streamIn;
     streamIn = fopen(filepath, "r");
     if (streamIn == (FILE *)0) {
@@ -636,14 +621,15 @@ class IOHandler {
 
     int byte;
     int count = 0;
-    for (int i = 0; i < 54; i++) byte = getc(streamIn);  // strip out BMP header
+    for (int i = 0; i < 54; i++)
+      byte = getc(streamIn); // strip out BMP header
 
-    for (int i = 0; i < 230400; i++) {  // foreach pixel
-      image[i][2] = getc(streamIn);     // use BMP 24bit with no alpha channel
+    for (int i = 0; i < 230400; i++) { // foreach pixel
+      image[i][2] = getc(streamIn);    // use BMP 24bit with no alpha channel
       image[i][1] =
-          getc(streamIn);  // BMP uses BGR but we want RGB, grab byte-by-byte
+          getc(streamIn); // BMP uses BGR but we want RGB, grab byte-by-byte
       image[i][0] =
-          getc(streamIn);  // reverse-order array indexing fixes RGB issue...
+          getc(streamIn); // reverse-order array indexing fixes RGB issue...
       // printf("pixel %d :
       // [%d,%d,%d]\n",i+1,image[i][0],image[i][1],image[i][2]);
     }
@@ -707,8 +693,17 @@ class IOHandler {
     close(fbfd);
   }
 
- private:
-  IOBackend<COLS, ROWS, CHANNELS, T> backend;
+private:
+#ifdef USE_CIMG
+#include "cimg_backend.hpp"
+  // using namespace visioncpp::utils::cimg;
+  typedef cimg<COLS, ROWS, CHANNELS, T> IOBackend;
+#else
+#include "opencv_backend.hpp"
+  // using namespace visioncpp::utils::opencv;
+  typedef opencv<COLS, ROWS, CHANNELS, T> IOBackend;
+#endif
+  IOBackend backend;
 };
 
 std::vector<std::string> list_files(std::string folder) {
@@ -733,5 +728,5 @@ std::vector<std::string> list_files(std::string folder) {
   return file_list;
 }
 
-}  // namespace utils
-}  // namespace visioncpp
+} // namespace utils
+} // namespace visioncpp

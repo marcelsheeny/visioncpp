@@ -62,6 +62,7 @@
 // }  // namespace cimg
 // }  // namespace utils
 // }  // namespace visioncpp
+#pragma once
 
 #include <cstdio>
 #include <memory>
@@ -73,15 +74,14 @@ using namespace cimg_library;
 namespace visioncpp {
 namespace utils {
 
-template <int COLS, int ROWS, int CHANNELS, typename T>
-class cimg {
- private:
+template <int COLS, int ROWS, int CHANNELS, typename T> class cimg {
+
+public:
   std::shared_ptr<T> output_ptr;
   std::shared_ptr<T> input_ptr;
   CImg<T> outputImage;
   CImg<T> inputImage;
 
- public:
   cimg(const char *filename) {
     // creating a pointer to store the results
     output_ptr =
@@ -114,5 +114,5 @@ class cimg {
     inputImage.display(output_file);
   }
 };
-}  // namespace utils
-}  // namespace visioncpp
+} // namespace utils
+} // namespace visioncpp
