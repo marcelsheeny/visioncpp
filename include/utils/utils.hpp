@@ -388,9 +388,7 @@
 #include <python2.7/Python.h>
 #include <thread>
 
-#include <ctime>
 #include <fcntl.h>
-#include <iostream>
 #include <linux/fb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -398,6 +396,8 @@
 #include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctime>
+#include <iostream>
 
 #ifdef USE_CIMG
 #include "cimg_backend.hpp"
@@ -414,33 +414,42 @@ namespace utils {
  * IOHandler class handles the input output in a agnostic way.
  * Currently using OpenCV and CImg to load/display images
  */
-template <int COLS, int ROWS, int CHANNELS, typename T> class IOHandler {
-public:
+template <int COLS, int ROWS, int CHANNELS, typename T>
+class IOHandler {
+ public:
   IOHandler() : backend() {}
 
   /* Constructor receives the filename path, which initialize input and output
    * memories */
   IOHandler(const char *filename) : backend(filename) {}
 
-  void imread(const char *filename) { backend = IOBackend(filename); }
+  void imread(const char *filename) { backend.imread(filename); }
 
   void saveOutput(char *output_file) { backend.save_image_output(output_file); }
 
-  void displayOutput(char *str) { backend.display_image_output(str); }
+  void displayOutput(char *str, const int &time) {
+    backend.display_image_output(str, time);
+  }
 
   void saveInput(char *output_file) { backend.save_image_input(output_file); }
 
-  void displayInput(char *str) { backend.display_image_input(str); }
+  void displayInput(char *str, const int &time) {
+    backend.display_image_input(str, time);
+  }
 
-  T *getInputPointer() { return backend.input_ptr.get(); }
+  void videoCapture(const char *str) { backend.videoCapture(str); }
 
-  T *getOutputPointer() { return backend.output_ptr.get(); }
+  void nextFrame() { backend.nextFrame(); }
+
+  T *getInputPointer() { return backend.getInputPointer(); }
+
+  T *getOutputPointer() { return backend.getOutputPointer(); }
 
   void displayGreyscaleImageOnFrameBuffer(int pos_x, int pos_y) {
     int width = COLS;
     int height = ROWS;
-    int image[width * height]; // first number here is pixels in my image, 3 is
-                               // for RGB values
+    int image[width * height];  // first number here is pixels in my image, 3 is
+                                // for RGB values
 
     // printf("width %d, height %d \n", width, height);
     //      cout << width << "x" << height << endl;
@@ -507,11 +516,11 @@ public:
         location = (x + vinfo.xoffset) * (vinfo.bits_per_pixel / 8) +
                    (y + vinfo.yoffset) * finfo.line_length;
         *(fbp + location) =
-            image[countpixel]; //*(fbp + location) = image[countpixel][2];
+            image[countpixel];  //*(fbp + location) = image[countpixel][2];
         *(fbp + location + 1) =
-            image[countpixel]; //*(fbp + location + 1) = image[countpixel][1];
+            image[countpixel];  //*(fbp + location + 1) = image[countpixel][1];
         *(fbp + location + 2) =
-            image[countpixel]; //*(fbp + location + 2) = image[countpixel][0];
+            image[countpixel];  //*(fbp + location + 2) = image[countpixel][0];
         //*(fbp + location + 3) = 0;
         countpixel++;
       }
@@ -522,8 +531,8 @@ public:
   void displayImageOnFrameBuffer(int pos_x, int pos_y) {
     int width = COLS;
     int height = ROWS;
-    int image[width * height][3]; // first number here is pixels in my image, 3
-                                  // is for RGB values
+    int image[width * height][3];  // first number here is pixels in my image, 3
+                                   // is for RGB values
 
     //	printf("width %d, height %d \n", width, height);
     //      cout << width << "x" << height << endl;
@@ -595,13 +604,13 @@ public:
         location = (x + vinfo.xoffset) * (vinfo.bits_per_pixel / 8) +
                    (y + vinfo.yoffset) * finfo.line_length;
         *(fbp + location) =
-            image[countpixel][0]; //*(fbp + location) = image[countpixel][2];
+            image[countpixel][0];  //*(fbp + location) = image[countpixel][2];
         *(fbp + location + 1) =
             image[countpixel]
-                 [1]; //*(fbp + location + 1) = image[countpixel][1];
+                 [1];  //*(fbp + location + 1) = image[countpixel][1];
         *(fbp + location + 2) =
             image[countpixel]
-                 [2]; //*(fbp + location + 2) = image[countpixel][0];
+                 [2];  //*(fbp + location + 2) = image[countpixel][0];
         *(fbp + location + 3) = 0;
         countpixel++;
       }
@@ -610,8 +619,8 @@ public:
   }
 
   void showImageOnFrameBuffer(char *filepath, int pos_x, int pos_y) {
-    int image[230400][3]; // first number here is 236160 pixels in my image, 3
-                          // is for RGB values
+    int image[230400][3];  // first number here is 236160 pixels in my image, 3
+                           // is for RGB values
     FILE *streamIn;
     streamIn = fopen(filepath, "r");
     if (streamIn == (FILE *)0) {
@@ -621,15 +630,14 @@ public:
 
     int byte;
     int count = 0;
-    for (int i = 0; i < 54; i++)
-      byte = getc(streamIn); // strip out BMP header
+    for (int i = 0; i < 54; i++) byte = getc(streamIn);  // strip out BMP header
 
-    for (int i = 0; i < 230400; i++) { // foreach pixel
-      image[i][2] = getc(streamIn);    // use BMP 24bit with no alpha channel
+    for (int i = 0; i < 230400; i++) {  // foreach pixel
+      image[i][2] = getc(streamIn);     // use BMP 24bit with no alpha channel
       image[i][1] =
-          getc(streamIn); // BMP uses BGR but we want RGB, grab byte-by-byte
+          getc(streamIn);  // BMP uses BGR but we want RGB, grab byte-by-byte
       image[i][0] =
-          getc(streamIn); // reverse-order array indexing fixes RGB issue...
+          getc(streamIn);  // reverse-order array indexing fixes RGB issue...
       // printf("pixel %d :
       // [%d,%d,%d]\n",i+1,image[i][0],image[i][1],image[i][2]);
     }
@@ -693,7 +701,7 @@ public:
     close(fbfd);
   }
 
-private:
+ private:
 #ifdef USE_CIMG
 #include "cimg_backend.hpp"
   // using namespace visioncpp::utils::cimg;
@@ -728,5 +736,5 @@ std::vector<std::string> list_files(std::string folder) {
   return file_list;
 }
 
-} // namespace utils
-} // namespace visioncpp
+}  // namespace utils
+}  // namespace visioncpp

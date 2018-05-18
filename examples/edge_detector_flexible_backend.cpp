@@ -60,13 +60,14 @@ int main(int argc, char** argv) {
   // selecting device
   auto dev = visioncpp::make_device<visioncpp::backend::sycl,
                                     visioncpp::device::cpu>();
+
   // defining the image size constants
   constexpr size_t COLS = 512;
   constexpr size_t ROWS = 512;
   constexpr size_t CHANNELS = 1;
 
-  visioncpp::utils::IOHandler<COLS, ROWS, CHANNELS, unsigned char> ioHandler(
-      argv[1]);
+  visioncpp::utils::IOHandler<COLS, ROWS, CHANNELS, unsigned char> ioHandler;
+  ioHandler.imread(argv[1]);
 
   // initializing the mask memories
   float sobel_x[9] = {-1.0f, 0.0f, 1.0f, -2.0f, 0.0f, 2.0f, -1.0f, 0.0f, 1.0f};
@@ -128,9 +129,9 @@ int main(int argc, char** argv) {
   }
   // display results
   // ioHandler.displayInput("Input");
-  // ioHandler.displayOutput("Output");
+  ioHandler.displayOutput("Output", 0);
   // ioHandler.saveOutput(argv[2]);
-  ioHandler.displayGreyscaleImageOnFrameBuffer(0, 0);
+  //  ioHandler.displayGreyscaleImageOnFrameBuffer(0, 0);
 
   return 0;
 }

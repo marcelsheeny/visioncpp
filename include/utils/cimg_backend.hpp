@@ -74,9 +74,9 @@ using namespace cimg_library;
 namespace visioncpp {
 namespace utils {
 
-template <int COLS, int ROWS, int CHANNELS, typename T> class cimg {
-
-public:
+template <int COLS, int ROWS, int CHANNELS, typename T>
+class cimg {
+ public:
   std::shared_ptr<T> output_ptr;
   std::shared_ptr<T> input_ptr;
   CImg<T> outputImage;
@@ -102,9 +102,9 @@ public:
 
   void save_image_output(char *output_file) { outputImage.save(output_file); }
 
-  void display_image_output(char *output_file) {
+  void display_image_output(char *output_file, const int &time) {
     CImgDisplay main_disp(outputImage, output_file);
-    main_disp.wait(1000);
+    main_disp.wait(time);
     // outputImage.display(output_file);
   }
 
@@ -114,5 +114,5 @@ public:
     inputImage.display(output_file);
   }
 };
-} // namespace utils
-} // namespace visioncpp
+}  // namespace utils
+}  // namespace visioncpp

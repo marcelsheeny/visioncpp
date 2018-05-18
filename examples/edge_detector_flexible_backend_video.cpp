@@ -71,6 +71,8 @@ int main(int argc, char** argv) {
 
   visioncpp::utils::IOHandler<COLS, ROWS, CHANNELS, unsigned char> ioHandler;
 
+  ioHandler.videoCapture(argv[1]);
+
   constexpr size_t filter_size = 3;
   constexpr size_t N = filter_size * filter_size;
 
@@ -80,10 +82,10 @@ int main(int argc, char** argv) {
     mean_array[i] = 1.0f / static_cast<float>(N);
   }
 
-  std::vector<std::string> file_list = visioncpp::utils::list_files(argv[1]);
-  for (auto file : file_list) {
+  // std::vector<std::string> file_list = visioncpp::utils::list_files(argv[1]);
+  while (true) {
     {
-      ioHandler.imread(file.c_str());
+      ioHandler.nextFrame();
 
       //  the node which gets the input data
       auto in = visioncpp::terminal<visioncpp::pixel::U8C1, COLS, ROWS,
@@ -133,7 +135,7 @@ int main(int argc, char** argv) {
     }
     // display results
     // ioHandler.displayInput("Input");
-    ioHandler.displayOutput("Output");
+    ioHandler.displayOutput("Output", 1);
     // ioHandler.saveOutput(argv[2]);
     // ioHandler.displayGreyscaleImageOnFrameBuffer(0, 0);
   }
