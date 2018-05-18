@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
   }
   // display results
   // ioHandler.displayInput("Input");
-  ioHandler.displayOutput("Output", 0);
+  ioHandler.displayOutput("Output");
   // ioHandler.saveOutput(argv[2]);
   //  ioHandler.displayGreyscaleImageOnFrameBuffer(0, 0);
 

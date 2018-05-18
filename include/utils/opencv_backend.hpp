@@ -48,14 +48,25 @@ class opencv {
     cv::waitKey(time);
   }
 
-  void save_image_input(char *output_file) {
-    cv::imwrite(output_file, inputImage);
+  void display_image_output(char *output_file) {
+    cv::imshow(output_file, outputImage);
+    cv::waitKey(0);
   }
 
   void display_image_input(char *str) {
     cv::imshow(str, inputImage);
     cv::waitKey(0);
   }
+
+  void display_image_input(char *str, const int &time) {
+    cv::imshow(str, inputImage);
+    cv::waitKey(time);
+  }
+
+  void save_image_input(char *output_file) {
+    cv::imwrite(output_file, inputImage);
+  }
+
 };  // namespace utils
 }  // namespace utils
 }  // namespace visioncpp
