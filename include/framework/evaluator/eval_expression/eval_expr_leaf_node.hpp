@@ -41,9 +41,9 @@ struct EvalExpr<LeafNode<PlaceHolder<Memory_Type, N, Cols, Rows, Sc>, LVL>, Loc,
   /// \brief evaluate function when the internal::ops_category is PointOP.
   static inline auto eval_point(Loc &cOffset,
                                 const tools::tuple::Tuple<Params...> &t)
-      -> decltype(tools::tuple::get<N>(t)
-                      .get_pointer()[cOffset.pointOp_gc +
-                                     (Cols * cOffset.pointOp_gr)]) {
+      -> decltype(
+          tools::tuple::get<N>(t).get_pointer()[cOffset.pointOp_gc +
+                                                (Cols * cOffset.pointOp_gr)]) {
     return tools::tuple::get<N>(t).get_pointer()[calculate_index(
         cOffset.pointOp_gc, cOffset.pointOp_gr, Cols, Rows)];
   }
@@ -53,10 +53,11 @@ struct EvalExpr<LeafNode<PlaceHolder<Memory_Type, N, Cols, Rows, Sc>, LVL>, Loc,
             size_t LR>
   static inline auto eval_neighbour(Loc &cOffset,
                                     const tools::tuple::Tuple<Params...> &t)
-      -> decltype(tools::tuple::get<Index_Finder<
-          N, OutputLocation<IsRoot, Offset + Index - 1>::ID, Memory_Type,
-          Trait<typename tools::RemoveAll<
-              decltype(tools::tuple::get<N>(t))>::Type>::scope>::Index>(t)) {
+      -> decltype(
+          tools::tuple::get<Index_Finder<
+              N, OutputLocation<IsRoot, Offset + Index - 1>::ID, Memory_Type,
+              Trait<typename tools::RemoveAll<decltype(
+                  tools::tuple::get<N>(t))>::Type>::scope>::Index>(t)) {
     fill_local_neighbour<
         Halo_Top, Halo_Left, Halo_Butt, Halo_Right,
         Index_Finder<N, OutputLocation<IsRoot, Offset + Index - 1>::ID,
@@ -75,6 +76,6 @@ struct EvalExpr<LeafNode<PlaceHolder<Memory_Type, N, Cols, Rows, Sc>, LVL>, Loc,
     return tools::tuple::get<N>(t);
   }
 };
-}  // internal
-}  // visioncpp
+}  // namespace internal
+}  // namespace visioncpp
 #endif  // VISIONCPP_INCLUDE_FRAMEWORK_EVALUATOR_EVAL_EXPRESSION_EVAL_EXPR_LEAF_NODE_HPP_

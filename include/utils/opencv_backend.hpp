@@ -14,7 +14,7 @@ class opencv {
   cv::Mat inputImage;
   cv::VideoCapture cap;
 
-  opencv() {}
+  opencv() { std::cout << "OpenCV IO Backend" << std::endl; }
 
   void videoCapture(const char *filename) {
     cap = cv::VideoCapture(filename);
@@ -34,9 +34,14 @@ class opencv {
     cv::resize(inputImage, inputImage, cv::Size(COLS, ROWS));
   }
 
-  void nextFrame() {
+  int nextFrame() {
     cap >> inputImage;
-    cvtColor(inputImage, inputImage, cv::COLOR_BGR2GRAY);
+    if (inputImage.data != 0) {
+      cvtColor(inputImage, inputImage, cv::COLOR_BGR2GRAY);
+      return 0;
+    } else {
+      return -1;
+    }
   }
 
   void save_image_output(char *output_file) {

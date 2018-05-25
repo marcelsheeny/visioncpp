@@ -28,13 +28,6 @@
 // include VisionCpp
 #include <visioncpp.hpp>
 
-#ifdef USE_CIMG
-#include "CImg.h"
-using namespace cimg_library;
-#else
-#include <opencv2/opencv.hpp>
-#endif
-
 // functor that calculates the magnitude of each pixel based on Sobel
 struct OP_Magnitude {
   template <typename T1, typename T2>
@@ -46,7 +39,8 @@ struct OP_Magnitude {
 void help() {
   std::cout << "Usage:" << std::endl;
   std::cout << "./bin/examples/edge_detector_flexible_backend "
-               "path/to/input.png [path/to/output.png]"
+               "path/to/video_folder/ using \"CImg\" or\n"
+               "path/to/video_folder/img%04d.jpeg using OpenCV "
             << std::endl;
 }
 

@@ -22,7 +22,9 @@ class cimg {
   int i = 0;
   CImgDisplay main_disp;
 
-  cimg() {}
+  cimg() { std::cout << "CImg IO Backend" << std::endl; }
+
+  void convertCimgToRGB(CImg<T> im) {}
 
   void imread(const char *filename) {
     inputImage = CImg<T>(filename);
@@ -34,7 +36,14 @@ class cimg {
   T *getInputPointer() { return inputImage.data(); }
   T *getOutputPointer() { return outputImage.data(); }
 
-  void nextFrame() { inputImage = CImg<T>(files[i++].c_str()); }
+  int nextFrame() {
+    try {
+      inputImage.load(files[i++].c_str());
+      return 0;
+    } catch (CImgException) {
+      return -1;
+    }
+  }
 
   void videoCapture(const char *filename) {
     files = list_files(std::string(filename));
@@ -77,7 +86,7 @@ class cimg {
       while ((ent = readdir(dir)) != NULL) {
         if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
           std::string fullpath = std::string(folder + ent->d_name);
-          printf("%s\n", fullpath.c_str());
+          // printf("%s\n", fullpath.c_str());
           file_list.push_back(fullpath);
         }
       }

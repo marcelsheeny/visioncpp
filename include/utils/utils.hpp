@@ -59,7 +59,7 @@ class IOHandler {
 
   void videoCapture(const char *str) { backend.videoCapture(str); }
 
-  void nextFrame() { backend.nextFrame(); }
+  int nextFrame() { return backend.nextFrame(); }
 
   T *getInputPointer() { return backend.getInputPointer(); }
 
